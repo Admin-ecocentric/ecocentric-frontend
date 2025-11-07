@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcoCentricEarth 🌱 | Shared Chat</title>
+<style>
+  body {
+    font-family: "Segoe UI", sans-serif;
+    background: #f2f8f6;
+    color: #1a1a1a;
+    padding: 1em;
+  }
+  header {
+    background: linear-gradient(90deg, #0a4d3e, #1077bc);
+    color: white;
+    text-align: center;
+    padding: 1em;
+    border-radius: 0.5em;
+  }
+  .message {
+    margin: 1em 0;
+    padding: 1em;
+    border-radius: 10px;
+    background: white;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .user { border-left: 4px solid #1077bc; }
+  .bot { border-left: 4px solid #0a4d3e; }
+</style>
+</head>
+<body>
+  <header><h2>Shared Chat – Ask Prakriti 🌱</h2></header>
+  <div id="chatbox"></div>
+
+<script>
+  const sessionId = "{{SESSION_ID}}";
+  const chatbox = document.getElementById("chatbox");
+
+  async function loadChat() {
+    const res = await fetch(`/api/share/${sessionId}`);
+    const data = await res.json();
+    if (data.error) {
+      chatbox.innerHTML = "<p>Chat not found.</p>";
+      return;
+    }
+
+    data.history.forEach(item => {
+      appendMessage("user", item.user);
+      const b = item.bot;
+      let html = `<strong>Overview:</strong> ${b.overview || "N/A"}<br>`;
+      if (b.references?.length)
+        html += `<br><strong>References:</strong><ul>${b.references.map(r => `<li><a href="${r}" target="_blank">${r}</a></li>`).join("")}</ul>`;
+      if (b.case_studies?.length)
+        html += `<br><strong>Case Studies:</strong><ul>${b.case_studies.map(c => `<li>${c}</li>`).join("")}</ul>`;
+      appendMessage("bot", html);
+    });
+  }
+
+  function appendMessage(role, text) {
+    const msg = document.createElement("div");
+    msg.className = `message ${role}`;
+    msg.innerHTML = text;
+    chatbox.appendChild(msg);
+  }
+
+  loadChat();
+</script>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ask Prakriti — EcocentricEarth</title>
+<style>
+  body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: black;
+    color: #fff;
+  }
+
+  /* Sidebar */
+  #sidebar {
+    width: 250px;
+    background: rgba(0,0,0,0.7);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    box-sizing: border-box;
+    backdrop-filter: blur(10px);
+  }
+
+  #sidebar h2 {
+    margin: 0 0 1rem 0;
+    text-align: center;
+    font-size: 1.3rem;
+    color: #00bcd4;
+  }
+
+  .chat-item {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+    word-wrap: break-word;
+  }
+
+  .chat-item:hover { 
+    background: rgba(0,180,255,0.2);
+    transform: translateX(2px);
+  }
+
+  #new-chat, #share-chat {
+    background: #00bcd4;
+    border: none;
+    color: white;
+    border-radius: 12px;
+    padding: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 10px;
+    transition: background 0.3s, transform 0.2s;
+  }
+
+  #new-chat:hover, #share-chat:hover { 
+    background: #00a2bb; 
+    transform: translateY(-2px);
+  }
+
+  /* Chat Section */
+  #chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  header {
+    background: rgba(0,0,0,0.6);
+    color: #00bcd4;
+    padding: 1rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+  }
+
+  #chat-box {
+    flex: 1;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.5);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    box-sizing: border-box;
+  }
+
+  .msg {
+    margin: 8px 0;
+    padding: 12px 16px;
+    border-radius: 15px;
+    max-width: 80%;
+    line-height: 1.5;
+    word-wrap: break-word;
+    animation: fadeIn 0.5s ease;
+  }
+
+  .user { 
+    align-self: flex-end;
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+  }
+
+  .bot { 
+    align-self: flex-start;
+    background: rgba(0,180,255,0.2);
+    color: #fff;
+    animation: pulseGlowBot 3s infinite alternate;
+  }
+
+  .section-title { font-weight: 600; margin-bottom: 5px; color: #00bcd4; }
+  .reference::before { content: "🔗 "; }
+  .organization::before { content: "🏛️ "; }
+  .precedent::before { content: "📜 "; }
+
+  #input-area {
+    display: flex;
+    padding: 1rem;
+    gap: 10px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+  }
+
+  #user-input {
+    flex: 1;
+    border-radius: 15px;
+    border: none;
+    padding: 12px 15px;
+    font-size: 1rem;
+    background: rgba(255,255,255,0.15);
+    color: white;
+    outline: none;
+  }
+
+  button.send-btn {
+    padding: 12px 18px;
+    border: none;
+    border-radius: 15px;
+    background: #00bcd4;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+  }
+
+  button.send-btn:hover { 
+    background: #00a2bb; 
+    transform: translateY(-2px);
+  }
+
+  footer {
+    text-align: center;
+    padding: 8px;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(5px);
+  }
+
+  @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
+
+  @keyframes pulseGlowBot {
+    0% { box-shadow: 0 0 10px rgba(0,180,255,0.25); }
+    100% { box-shadow: 0 0 30px rgba(0,180,255,0.45); }
+  }
+
+  @keyframes blinkGlow { 
+    0%, 50%, 100% { border-color: #00bcd4; } 
+    25%, 75% { border-color: transparent; } 
+  }
+
+  @media (max-width: 700px) { #sidebar { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <h2>💬 Your Chats</h2>
+  <div id="chat-list"></div>
+  <button id="share-chat">🔗 Share (read-only)</button>
+  <button id="new-chat">+ New Chat</button>
+</div>
+
+<div id="chat-container">
+  <header> Ask Prakirti!
+  </header>
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <input id="user-input" placeholder="Type your message here" />
+    <button class="send-btn" onclick="sendMessage()">Send</button>
+  </div>
+  <footer>Empowering environmental intelligence </footer>
+</div>
+
+<script>
+const API_BASE = "https://ecocentricearth-chatbot.onrender.com";
+const chatBox = document.getElementById("chat-box");
+const input = document.getElementById("user-input");
+const chatList = document.getElementById("chat-list");
+const newChatBtn = document.getElementById("new-chat");
+const shareChatBtn = document.getElementById("share-chat");
+
+let chats = [];
+let currentChatId = null;
+
+// Load shared chat from URL
+const urlParams = new URLSearchParams(window.location.search);
+const sharedChatData = urlParams.get("chat");
+if (sharedChatData) {
+  try {
+    const parsed = JSON.parse(decodeURIComponent(sharedChatData));
+    chatBox.innerHTML = "";
+    parsed.messages.forEach(m => {
+      if (m.role === "user") appendUserMessage(m.content);
+      else appendBotMessage(m.content, true);
+    });
+    input.disabled = true;
+    document.querySelector(".send-btn").disabled = true;
+    appendBotMessage("🔒 This is a read-only shared chat.", true);
+    document.getElementById("input-area").style.display = "none";
+  } catch (err) { console.error("Error loading shared chat:", err); }
+} else {
+  startNewChat();
+}
+
+function renderChatList() {
+  chatList.innerHTML = "";
+  chats.forEach((chat, idx) => {
+    const item = document.createElement("div");
+    item.className = "chat-item";
+    item.textContent = chat.title || `Chat ${idx + 1}`;
+    item.onclick = () => openChat(idx);
+    chatList.appendChild(item);
+  });
+}
+
+function startNewChat() {
+  const newChat = { title: `Chat ${chats.length + 1}`, messages: [] };
+  chats.push(newChat);
+  currentChatId = chats.length - 1;
+  chatBox.innerHTML = "";
+  appendBotMessage("Hello — I’m Prakriti. Ask me anything about the Earth!");
+  renderChatList();
+}
+
+function openChat(idx) {
+  currentChatId = idx;
+  chatBox.innerHTML = "";
+  const messages = chats[idx].messages || [];
+  messages.forEach(m => {
+    if (m.role === "user") appendUserMessage(m.content);
+    else appendBotMessage(m.content, true);
+  });
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text || currentChatId === null) return;
+
+  appendUserMessage(text);
+  chats[currentChatId].messages.push({ role: "user", content: text });
+  input.value = "";
+  const thinkingMsg = appendBotMessage("Thinking...");
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: text })
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    thinkingMsg.remove();
+    const answer = data.answer;
+
+    if(answer.sections) answer.sections.forEach(s => {
+      appendBotCard(`<div class='section-title'>${s.title}</div><div>${s.content}</div>`);
+    });
+    if(answer.precedents?.length) appendBotCardList("Precedents", answer.precedents, "precedent");
+    if(answer.organizations?.length) appendBotCardList("Organizations", answer.organizations, "organization");
+    if(answer.references?.length) appendBotCardList("References", answer.references, "reference");
+
+    chats[currentChatId].messages.push({ role: "bot", content: chatBox.lastChild.innerHTML });
+
+  } catch(err) {
+    thinkingMsg.remove();
+    appendBotMessage("Error contacting backend. See console for details.");
+    console.error(err);
+  }
+}
+
+// ---------------- Helpers ----------------
+function appendUserMessage(text) {
+  const msg = document.createElement("div");
+  msg.className = "msg user";
+  msg.textContent = text;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return msg;
+}
+
+function appendBotMessage(text, html=false) {
+  const msg = document.createElement("div");
+  msg.className = "msg bot";
+  if(html) msg.innerHTML = text;
+  else msg.textContent = text;
+  chatBox.appendChild(msg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return msg;
+}
+
+function appendBotCard(html) {
+  const card = document.createElement("div");
+  card.className="msg bot section-card";
+  card.innerHTML = html;
+  chatBox.appendChild(card);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function appendBotCardList(title, items, type){
+  let html = `<div class="section-title">${title}:</div>`;
+  items.forEach(i=>{
+    html+=`<div class="${type}"><a href="${i.url}" target="_blank">${i.title||i.url}</a></div>`;
+  });
+  appendBotCard(html);
+}
+
+// ---------------- Events ----------------
+input.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
+newChatBtn.onclick = startNewChat;
+shareChatBtn.onclick = () => {
+  if(currentChatId===null) return alert("No chat selected!");
+  const currentChat = chats[currentChatId];
+  const shareData = { title: currentChat.title, messages: currentChat.messages };
+  const encoded = encodeURIComponent(JSON.stringify(shareData));
+  const shareUrl = `${window.location.origin}${window.location.pathname}?chat=${encoded}`;
+  navigator.clipboard.writeText(shareUrl)
+    .then(()=>alert("🔗 Share link copied!"))
+    .catch(()=>alert("Couldn't copy link. Copy manually:\n"+shareUrl));
+};
+</script>
+
+</body>
+</html>
